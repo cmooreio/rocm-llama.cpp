@@ -1,0 +1,68 @@
+# ROCm llama.cpp Docker Image - Git Ignore Rules
+
+# Build artifacts
+sbom-*.json
+*.tar
+*.tar.gz
+
+# Cosign signing keys
+*.key
+*.pub
+cosign.key
+cosign.pub
+
+# Model files (can be large)
+models/
+*.gguf
+*.bin
+
+# Docker volumes
+llama-data/
+llama-logs/
+
+# Test artifacts
+tests/*.log
+tests/test-results/
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files with secrets
+.env.local
+.env.*.local
+*.secret
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Pre-commit
+.secrets.baseline
+
+# Backup files
+*.bak
+*.backup
+versions.env.bak

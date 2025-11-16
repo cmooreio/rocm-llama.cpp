@@ -1,0 +1,82 @@
+# ROCm llama.cpp Docker Image - Docker Ignore Rules
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Build artifacts
+sbom-*.json
+*.tar
+*.tar.gz
+
+# Model files (built separately, not needed in image build context)
+models/
+*.gguf
+*.bin
+
+# Test files
+tests/
+test/
+*.test
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.*
+*.secret
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+venv/
+env/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Pre-commit
+.pre-commit-config.yaml
+.secrets.baseline
+
+# Backup files
+*.bak
+*.backup
+
+# Keys
+*.key
+*.pub
+cosign.key
+cosign.pub
