@@ -49,6 +49,12 @@ RUN apt-get update && \
         -DLLAMA_CURL=ON && \
     cmake --build build --config Release -j$(nproc) && \
     cp build/bin/llama-* /usr/local/bin/ && \
+    cp build/bin/*.so* /usr/local/lib/ && \
+    echo "Validating shared libraries were copied..." && \
+    ls -lh /usr/local/lib/libllama.so* /usr/local/lib/libggml*.so* /usr/local/lib/libmtmd.so* && \
+    ldconfig && \
+    echo "Validating ldconfig loaded libraries..." && \
+    ldconfig -p | grep -E 'libllama|libggml' && \
     chmod +x /usr/local/bin/llama-* && \
     llama-server --version || llama-cli --version && \
     cd /workspace && \
