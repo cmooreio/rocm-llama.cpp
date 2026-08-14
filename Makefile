@@ -5,6 +5,7 @@ include versions.env
 
 # Export variables so they can be used by build.sh
 export ROCM_VERSION
+export ROCM_DIGEST
 export LLAMACPP_VERSION
 export LLAMACPP_ROCM_ARCH
 
@@ -142,6 +143,7 @@ check-deps: ## Check required dependencies
 validate: ## Validate versions.env and configuration
 	@echo "Validating configuration..."
 	@test -n "$(ROCM_VERSION)" || { echo "Error: ROCM_VERSION not set in versions.env"; exit 1; }
+	@test -n "$(ROCM_DIGEST)" || { echo "Error: ROCM_DIGEST not set in versions.env"; exit 1; }
 	@test -n "$(LLAMACPP_VERSION)" || { echo "Error: LLAMACPP_VERSION not set in versions.env"; exit 1; }
 	@test -n "$(LLAMACPP_ROCM_ARCH)" || { echo "Error: LLAMACPP_ROCM_ARCH not set in versions.env"; exit 1; }
 	@test -f "$(DOCKERFILE)" || { echo "Error: $(DOCKERFILE) not found"; exit 1; }
@@ -288,8 +290,8 @@ push-signed: push sign ## Push and sign image (requires push confirmation)
 
 clean: ## Remove local images
 	@echo "Removing local images..."
-	@docker rmi $(IMAGE_REPO):latest 2>/dev/null || true
-	@docker rmi $(IMAGE_REPO):$(LLAMACPP_VERSION) 2>/dev/null || true
+	@docker rmi $(IMAGE_LATEST) 2>/dev/null || true
+	@docker rmi $(IMAGE_NAME) 2>/dev/null || true
 	@echo "Cleanup complete"
 
 clean-all: clean ## Remove all build artifacts and builder

@@ -1,10 +1,11 @@
 # Build arguments (must be before FROM to use in FROM statements)
-ARG ROCM_VERSION=7.1-complete
+ARG ROCM_VERSION=7.2-complete
+ARG ROCM_DIGEST=sha256:86e11093b4a7ec2a79b1b6701d10e840a6994f21c7e05929b51eb9be361c683a
 ARG LLAMACPP_VERSION=b7079
 ARG LLAMACPP_ROCM_ARCH=gfx803,gfx900,gfx906,gfx908,gfx90a,gfx942,gfx1010,gfx1030,gfx1032,gfx1100,gfx1101,gfx1102
 
 # Base image from AMD ROCm
-FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION}
+FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION}@sha256:86e11093b4a7ec2a79b1b6701d10e840a6994f21c7e05929b51eb9be361c683a
 
 # Re-declare build arguments for use in this stage
 ARG LLAMACPP_VERSION

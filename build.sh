@@ -99,6 +99,7 @@ load_versions() {
 
     # Save any existing environment variables (from Makefile)
     local env_rocm_version="${ROCM_VERSION:-}"
+    local env_rocm_digest="${ROCM_DIGEST:-}"
     local env_llamacpp_version="${LLAMACPP_VERSION:-}"
     local env_llamacpp_rocm_arch="${LLAMACPP_ROCM_ARCH:-}"
 
@@ -110,12 +111,18 @@ load_versions() {
 
     # Prefer environment variables over versions.env
     ROCM_VERSION="${env_rocm_version:-$ROCM_VERSION}"
+    ROCM_DIGEST="${env_rocm_digest:-$ROCM_DIGEST}"
     LLAMACPP_VERSION="${env_llamacpp_version:-$LLAMACPP_VERSION}"
     LLAMACPP_ROCM_ARCH="${env_llamacpp_rocm_arch:-$LLAMACPP_ROCM_ARCH}"
 
     # Validate ROCm version
     if [[ -z "${ROCM_VERSION:-}" ]]; then
         log_error "ROCM_VERSION not set"
+        exit 1
+    fi
+
+    if [[ -z "${ROCM_DIGEST:-}" ]]; then
+        log_error "ROCM_DIGEST not set"
         exit 1
     fi
 
@@ -135,6 +142,7 @@ load_versions() {
     fi
 
     log_info "ROCm version: $ROCM_VERSION"
+    log_info "ROCm digest: $ROCM_DIGEST"
     log_info "llama.cpp version: $LLAMACPP_VERSION"
     log_info "ROCm architectures: $LLAMACPP_ROCM_ARCH"
 }
@@ -251,6 +259,7 @@ build_image() {
         "--platform" "$PLATFORM"
         "--file" "$dockerfile"
         "--build-arg" "ROCM_VERSION=$ROCM_VERSION"
+        "--build-arg" "ROCM_DIGEST=$ROCM_DIGEST"
         "--build-arg" "LLAMACPP_VERSION=$LLAMACPP_VERSION"
         "--build-arg" "LLAMACPP_ROCM_ARCH=$LLAMACPP_ROCM_ARCH"
         "--build-arg" "BUILD_DATE=$build_date"
