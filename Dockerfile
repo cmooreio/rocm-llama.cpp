@@ -10,6 +10,7 @@ FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION}@sha256:86e11093b4a7ec2a79b1b6701d10e8
 # Re-declare build arguments for use in this stage
 ARG LLAMACPP_VERSION
 ARG LLAMACPP_ROCM_ARCH
+ARG LLAMACPP_BUILD_JOBS=4
 ARG BUILD_DATE
 ARG VCS_REF
 
@@ -25,10 +26,15 @@ LABEL org.opencontainers.image.title="llama-server-rocm" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.vendor="cmooreio" \
       io.cmooreio.llama.version="${LLAMACPP_VERSION}" \
+      io.cmooreio.llama.kv_sync_patch="pr28058-148f18d" \
       io.cmooreio.llama.rocm_arch="${LLAMACPP_ROCM_ARCH}"
 
 # Set working directory
 WORKDIR /workspace
+
+# Vendored upstream fix for cross-request KV corruption on integrated GPUs.
+# Fail the build if a future llama.cpp version no longer accepts the patch.
+COPY patches/0001-synchronize-graph-inputs.patch /workspace/patches/
 
 # Install dependencies, build llama.cpp, and cleanup in single layer to reduce image size
 RUN apt-get update && \
@@ -41,6 +47,8 @@ RUN apt-get update && \
     git clone --depth 1 --branch ${LLAMACPP_VERSION} \
         https://github.com/ggml-org/llama.cpp.git /workspace/llama.cpp && \
     cd /workspace/llama.cpp && \
+    git apply --check /workspace/patches/0001-synchronize-graph-inputs.patch && \
+    git apply /workspace/patches/0001-synchronize-graph-inputs.patch && \
     HIPCXX="$(hipconfig -l)/clang" \
     HIP_PATH="$(hipconfig -R)" \
     cmake -S . -B build \
@@ -48,7 +56,7 @@ RUN apt-get update && \
         -DAMDGPU_TARGETS=${LLAMACPP_ROCM_ARCH} \
         -DCMAKE_BUILD_TYPE=Release \
         -DLLAMA_CURL=ON && \
-    cmake --build build --config Release -j$(nproc) && \
+    cmake --build build --config Release -j "${LLAMACPP_BUILD_JOBS}" && \
     cp build/bin/llama-* /usr/local/bin/ && \
     cp build/bin/*.so* /usr/local/lib/ && \
     echo "Validating shared libraries were copied..." && \
@@ -57,7 +65,7 @@ RUN apt-get update && \
     echo "Validating ldconfig loaded libraries..." && \
     ldconfig -p | grep -E 'libllama|libggml' && \
     chmod +x /usr/local/bin/llama-* && \
-    llama-server --version || llama-cli --version && \
+    (llama-server --version || llama-cli --version) && \
     cd /workspace && \
     rm -rf /workspace/llama.cpp && \
     apt-get remove -y cmake git && \

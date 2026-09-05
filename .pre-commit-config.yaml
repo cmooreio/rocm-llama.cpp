@@ -10,8 +10,10 @@ repos:
     hooks:
       - id: trailing-whitespace
         name: Trim trailing whitespace
+        exclude: '\.patch$'
       - id: end-of-file-fixer
         name: Fix end of files
+        exclude: '\.patch$'
       - id: check-yaml
         name: Check YAML syntax
         args: ['--unsafe']  # Allow custom tags in docker-compose

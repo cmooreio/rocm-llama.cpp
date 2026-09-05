@@ -180,6 +180,10 @@ make all
 
 ### Using build.sh directly
 
+Compilation defaults to four jobs so builds can run on a shared inference host.
+For a dedicated builder, override the Docker build argument
+`LLAMACPP_BUILD_JOBS` to increase parallelism.
+
 ```bash
 # Build for AMD64
 ./build.sh
@@ -309,7 +313,7 @@ The `versions.env` file contains the single source of truth for version informat
 
 To update to a newer llama.cpp version:
 
-1. Visit https://github.com/ggml-org/llama.cpp/releases
+1. Visit <https://github.com/ggml-org/llama.cpp/releases>
 2. Copy the release tag (e.g., b7079, b7080)
 3. Update `LLAMACPP_VERSION` in `versions.env`
 4. Rebuild: `make build`
@@ -341,6 +345,54 @@ make release-signed
 ```
 
 ## Troubleshooting
+
+### Previous conversations appearing in a new chat on gfx1151
+
+The build includes the synchronization fix from upstream
+[PR #28058](https://github.com/ggml-org/llama.cpp/pull/28058), commit
+`148f18da5b50597b30dc00260f0ba75b12bf7049`. The PR was still unmerged on
+2026-09-05. The patch is vendored and checked before compilation; if a future
+version already includes it, review and remove the backport rather than ignoring
+an application failure.
+
+[Issue #28056](https://github.com/ggml-org/llama.cpp/issues/28056) describes a
+ROCm integrated-GPU race during long prompt processing: the CPU overwrites graph
+inputs while the GPU still reads them. Attention-cache writes can land in the
+wrong cells, leaving previous conversation data visible to a new request.
+Disabling prompt reuse is not a reliable remedy for this memory corruption.
+
+The homelab investigation found distinct T3/OpenCode session IDs, no configured
+LiteLLM response cache, and a new ComfyUI chat unexpectedly resuming an earlier
+project after reading a long document. The deployed binary reported `e70802a`,
+whose upstream source contains the affected code. This is a strong match to the
+upstream bug, but a patched-versus-unpatched GPU comparison is still needed to
+confirm the fix here. Short independent chat requests passed isolation checks;
+they do not exercise the long-prompt failure reliably.
+
+To roll out the fix:
+
+1. Build this Dockerfile for `linux/amd64` with
+   `LLAMACPP_ROCM_ARCH=gfx1151`, using a distinct image tag such as
+   `gfx1151-b10664-kv-sync1`. The image label
+   `io.cmooreio.llama.kv_sync_patch` identifies the backport; the binary's upstream
+   version alone does not identify it.
+2. Test two independent requests with the same tools/system prefix: first a
+   distinctive disposable topic, then an unrelated document of at least 20,000
+   tokens. Repeat across several alternations, with prompt caching enabled.
+   Record responses without executing generated tool calls. Compare with the
+   unpatched image. Include cancellation/retry and streaming cases.
+3. Publish the tested image and set `rocmModels.image.tag` and its registry
+   `digest` in `kubernetes/charts/ai-server/values.yaml`. Commit the image-build
+   submodule first, then commit its updated reference and chart values in the
+   homelab repository and push for ArgoCD deployment. Editing this Dockerfile
+   alone does not update the cluster.
+4. Start a fresh client conversation after rollout. A conversation that already
+   contains the unrelated tool calls will continue sending that history even
+   after the backend is fixed.
+
+Only the synchronization change is backported. The PR's separate hardening for
+`--cache-reuse` is not included; this chart leaves that feature at its disabled
+default of zero.
 
 ### GPU Not Detected
 
