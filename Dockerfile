@@ -1,16 +1,17 @@
 # Build arguments (must be before FROM to use in FROM statements)
-ARG ROCM_VERSION=7.2-complete
-ARG ROCM_DIGEST=sha256:86e11093b4a7ec2a79b1b6701d10e840a6994f21c7e05929b51eb9be361c683a
+ARG ROCM_VERSION=7.2.4-complete
+ARG ROCM_DIGEST=sha256:92f309c51b52cef8762867848f1529dee821624f23cd5df38455e819538f762f
 ARG LLAMACPP_VERSION=b10664
 ARG LLAMACPP_ROCM_ARCH=gfx803,gfx900,gfx906,gfx908,gfx90a,gfx942,gfx1010,gfx1030,gfx1032,gfx1100,gfx1101,gfx1102
 
 # Base image from AMD ROCm
-FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION}@sha256:86e11093b4a7ec2a79b1b6701d10e840a6994f21c7e05929b51eb9be361c683a
+FROM rocm/dev-ubuntu-24.04:${ROCM_VERSION}@sha256:92f309c51b52cef8762867848f1529dee821624f23cd5df38455e819538f762f
 
 # Re-declare build arguments for use in this stage
+ARG ROCM_VERSION
 ARG LLAMACPP_VERSION
 ARG LLAMACPP_ROCM_ARCH
-ARG LLAMACPP_BUILD_JOBS=4
+ARG LLAMACPP_BUILD_JOBS=16
 ARG BUILD_DATE
 ARG VCS_REF
 
@@ -27,7 +28,8 @@ LABEL org.opencontainers.image.title="llama-server-rocm" \
       org.opencontainers.image.vendor="cmooreio" \
       io.cmooreio.llama.version="${LLAMACPP_VERSION}" \
       io.cmooreio.llama.kv_sync_patch="pr28058-148f18d" \
-      io.cmooreio.llama.rocm_arch="${LLAMACPP_ROCM_ARCH}"
+      io.cmooreio.llama.rocm_arch="${LLAMACPP_ROCM_ARCH}" \
+      io.cmooreio.rocm.version="${ROCM_VERSION}"
 
 # Set working directory
 WORKDIR /workspace
@@ -54,6 +56,7 @@ RUN apt-get update && \
     cmake -S . -B build \
         -DGGML_HIP=ON \
         -DAMDGPU_TARGETS=${LLAMACPP_ROCM_ARCH} \
+        -DGGML_HIP_NO_VMM=ON \
         -DCMAKE_BUILD_TYPE=Release \
         -DLLAMA_CURL=ON && \
     cmake --build build --config Release -j "${LLAMACPP_BUILD_JOBS}" && \
